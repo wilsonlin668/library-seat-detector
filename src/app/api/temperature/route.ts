@@ -60,6 +60,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const temp = typeof body.temp === 'number' ? body.temp : parseFloat(body.temp);
     const status = body.status ?? 'error';
+    const fsr =
+      typeof body.fsr === 'number'
+        ? body.fsr
+        : body.fsr != null
+          ? parseInt(String(body.fsr), 10)
+          : undefined;
 
     if (typeof temp !== 'number' || isNaN(temp)) {
       return NextResponse.json(
@@ -71,6 +77,7 @@ export async function POST(request: NextRequest) {
     const reading: TemperatureReading = {
       temp,
       status: status as TemperatureReading['status'],
+      ...(typeof fsr === 'number' && !isNaN(fsr) ? { fsr } : {}),
       timestamp: Date.now(),
     };
 

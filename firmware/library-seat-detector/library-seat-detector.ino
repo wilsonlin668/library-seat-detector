@@ -3,11 +3,17 @@ const float R0 = 10000.0;
 const float T0 = 298.15;
 const float B = 3950.0;
 
-const float BODY_TEMP_MIN = 34.0;
+const float BODY_TEMP_MIN = 32.0;
 const float BODY_TEMP_MAX = 38.0;
+
+const int FSR_PIN = A0;
 
 void setup() {
   Serial.begin(9600);
+}
+
+int readFSR() {
+  return analogRead(FSR_PIN);
 }
 
 float readTemperatureC() {
@@ -31,19 +37,24 @@ const char* getStatus(float tempC) {
 void loop() {
   static float lastTempC = -999.0;
   static const char* lastStatus = "";
+  static int lastFsr = -1;
 
   float tempC = readTemperatureC();
   const char* status = getStatus(tempC);
+  int fsr = readFSR();
 
-  if (tempC != lastTempC || status != lastStatus) {
+  if (tempC != lastTempC || status != lastStatus || fsr != lastFsr) {
     lastTempC = tempC;
     lastStatus = status;
+    lastFsr = fsr;
 
     Serial.print("{\"temp\":");
     Serial.print(tempC, 1);
     Serial.print(",\"status\":\"");
     Serial.print(status);
-    Serial.println("\"}");
+    Serial.print("\",\"fsr\":");
+    Serial.print(fsr);
+    Serial.println("}");
   }
 
   delay(500);

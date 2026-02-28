@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { IconTemperature, IconLoader, IconAlertCircle } from '@tabler/icons-react';
+import { IconTemperature, IconLoader, IconAlertCircle, IconHandFinger } from '@tabler/icons-react';
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
 import {
@@ -20,6 +20,9 @@ import {
 } from '@/components/ui/chart';
 import { Badge } from '@/components/ui/badge';
 import type { TemperatureReading } from '@/lib/types/temperature';
+import type { SeatStatus } from '@/lib/config/seat-status';
+import { computeSeatStatus } from '@/lib/config/seat-status';
+import { getSeatStatusBadgeConfig } from '@/lib/config/seat-status-badge';
 
 const chartConfig = {
   temp: {
@@ -67,11 +70,16 @@ export function TemperatureDashboard() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['temperature'],
     queryFn: fetchTemperature,
-    refetchInterval: 60_000,
-    staleTime: 60_000,
+    refetchInterval: 1_000,
+    staleTime: 1_000,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  const latestSeatStatus = React.useMemo<SeatStatus | null>(() => {
+    if (!data?.latest || !data.history) return null;
+    return computeSeatStatus(data.latest, data.history);
+  }, [data?.latest, data?.history]);
 
   const chartData = React.useMemo(() => {
     if (!data?.history?.length) return [];
@@ -111,6 +119,20 @@ export function TemperatureDashboard() {
                 <Badge variant={getStatusBadgeVariant(data.latest.status)}>
                   {data.latest.status.replace('_', ' ')}
                 </Badge>
+                {data.latest.fsr != null && (
+                  <>
+                    <IconHandFinger className="size-6 ml-2" />
+                    <span className="text-muted-foreground">FSR: {data.latest.fsr}</span>
+                  </>
+                )}
+                {latestSeatStatus && (
+                  <Badge
+                    {...getSeatStatusBadgeConfig(latestSeatStatus)}
+                    className={`ml-2 ${getSeatStatusBadgeConfig(latestSeatStatus).className ?? ''}`}
+                  >
+                    {getSeatStatusBadgeConfig(latestSeatStatus).label}
+                  </Badge>
+                )}
               </>
             ) : (
               <>No data yet — connect Arduino and run serial bridge</>

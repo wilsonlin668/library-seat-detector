@@ -7,11 +7,11 @@
  * Start Next.js first (npm run dev), then run this script.
  */
 
-import { SerialPort } from 'serialport';
-import { ReadlineParser } from '@serialport/parser-readline';
-import http from 'http';
-import path from 'path';
-import fs from 'fs';
+const { SerialPort } = require('serialport');
+const { ReadlineParser } = require('@serialport/parser-readline');
+const http = require('http');
+const path = require('path');
+const fs = require('fs');
 
 // Load .env from project root so SERIAL_PORT=COM9 in .env is used
 try {
@@ -27,7 +27,7 @@ try {
 
 const API_URL = 'http://localhost:3000/api/temperature';
 const BAUDRATE = 9600;
-const SEND_INTERVAL_MS = 60 * 1000;
+const SEND_INTERVAL_MS = 1 * 1000;
 const DEBUG = process.env.DEBUG === '1';
 const PORT_OVERRIDE = process.env.SERIAL_PORT || process.env.COM_PORT;
 
@@ -165,29 +165,41 @@ async function main() {
       try {
         data = JSON.parse(trimmed);
       } catch (err) {
-        if (DEBUG) console.log('Parse skip:', err.message);
+        console.warn('Skipped (invalid JSON):', trimmed.slice(0, 60) + (trimmed.length > 60 ? '...' : ''));
         return;
       }
       const temp = typeof data.temp === 'number' ? data.temp : parseFloat(data.temp);
       const status = data.status ?? '';
+      const fsr =
+        typeof data.fsr === 'number'
+          ? data.fsr
+          : data.fsr != null
+            ? parseInt(String(data.fsr), 10)
+            : undefined;
       if (typeof temp !== 'number' || isNaN(temp)) {
-        if (DEBUG) console.log('Skip: invalid temp', data.temp);
+        console.warn('Skipped (invalid temp):', trimmed.slice(0, 60) + (trimmed.length > 60 ? '...' : ''));
         return;
       }
       if (!status || typeof status !== 'string') {
-        if (DEBUG) console.log('Skip: missing or invalid status', data.status);
+        console.warn('Skipped (missing/invalid status):', trimmed.slice(0, 60) + (trimmed.length > 60 ? '...' : ''));
         return;
       }
-      latest = { temp, status };
+      latest =
+        typeof fsr === 'number' && !isNaN(fsr)
+          ? { temp, status, fsr }
+          : { temp, status };
+      sendLatest();
     });
 
     const sendLatest = () => {
       if (!latest) return;
       postToApi(latest);
-      console.log('Sent:', latest.temp.toFixed(1), '°C', latest.status);
+      const fsrStr = latest.fsr != null ? ` FSR: ${latest.fsr}` : '';
+      console.log('Sent:', latest.temp.toFixed(1), '°C', latest.status + fsrStr);
     };
-    sendLatest();
     intervalId = setInterval(sendLatest, SEND_INTERVAL_MS);
+
+    console.log('Waiting for first reading from Arduino...');
 
     port.on('error', (err) => {
       if (intervalId) clearInterval(intervalId);
@@ -196,6 +208,7 @@ async function main() {
     });
 
     console.log('Bridge running. POSTing to', API_URL);
+    console.log('(If nothing appears below: close Serial Monitor, confirm Arduino is on', portPath + ', 9600 baud)');
   } catch (err) {
     console.error(err.message);
     if (/access denied|Opening COM|EBUSY|EACCES/i.test(err.message || '')) {

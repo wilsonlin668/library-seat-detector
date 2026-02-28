@@ -12,6 +12,7 @@ import {
   IconListDetails,
   IconSearch,
   IconSettings,
+  IconMap,
 } from '@tabler/icons-react';
 
 import { NavMain } from '@/components/nav-main';
@@ -40,6 +41,11 @@ const data = {
       title: 'Dashboard',
       url: '/dashboard',
       icon: IconDashboard,
+    },
+    {
+      title: 'Seat Management',
+      url: '/seat-management',
+      icon: IconMap,
     },
     {
       title: 'Lifecycle',
