@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "serial-bridge": "node scripts/serial-bridge.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",
@@ -79,6 +80,8 @@
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.6",
-    "typescript": "^5"
+    "typescript": "^5",
+    "serialport": "^12.0.0",
+    "@serialport/parser-readline": "^12.0.0"
   }
 }
