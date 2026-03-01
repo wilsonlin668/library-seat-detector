@@ -6,18 +6,20 @@ const float B = 3950.0;
 const float BODY_TEMP_MIN = 32.0;
 const float BODY_TEMP_MAX = 38.0;
 
-const int FSR_PIN = A0;
+// Channel 1: A3 = FSR, A5 = NTC
+const int FSR_PIN_CH1 = A3;
+const int NTC_PIN_CH1 = A5;
 
 void setup() {
   Serial.begin(9600);
 }
 
 int readFSR() {
-  return analogRead(FSR_PIN);
+  return analogRead(FSR_PIN_CH1);
 }
 
 float readTemperatureC() {
-  int raw = analogRead(A5);
+  int raw = analogRead(NTC_PIN_CH1);
   if (raw >= 1022) return 999.0;
   if (raw <= 1) return -999.0;
 
@@ -54,7 +56,8 @@ void loop() {
     Serial.print(status);
     Serial.print("\",\"fsr\":");
     Serial.print(fsr);
-    Serial.println("}");
+    Serial.print(",\"channel\":1}");
+    Serial.println();
   }
 
   delay(500);

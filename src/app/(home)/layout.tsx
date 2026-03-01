@@ -22,7 +22,9 @@ export default function HomeLayout({
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col px-6 py-6">{children}</div>
+        <div className="flex min-h-0 max-h-[calc(100svh-var(--header-height)-1rem)] flex-1 flex-col px-6 py-6">
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );
