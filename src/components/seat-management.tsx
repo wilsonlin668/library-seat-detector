@@ -2,9 +2,12 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { useQuery } from '@tanstack/react-query';
 import { DragDropProvider, useDraggable, useDroppable } from '@dnd-kit/react';
 import type { SeatStatus } from '@/lib/config/seat-status';
+import { computeSeatStatus } from '@/lib/config/seat-status';
 import { getSeatStatusBadgeConfig } from '@/lib/config/seat-status-badge';
+import type { TemperatureReading } from '@/lib/types/temperature';
 import { floors, type FloorDefinition } from '@/lib/config/floors';
 import {
   Card,
@@ -106,7 +109,7 @@ function DraggableSeat({
     seat.status && statusConfig?.className
       ? statusConfig.className
       : seat.status === 'occupied'
-        ? 'bg-primary text-primary-foreground'
+        ? 'bg-gray-500 text-white'
         : seat.status === 'reserved'
           ? 'bg-orange-500/80 text-white'
           : seat.status === 'session_expired'
@@ -119,7 +122,7 @@ function DraggableSeat({
       : seat.status === 'reserved'
         ? 'border-orange-500'
         : seat.status === 'occupied'
-          ? 'border-primary'
+          ? 'border-gray-500'
           : seat.status === 'session_expired'
             ? 'border-destructive'
             : 'border-slate-400';
@@ -190,6 +193,15 @@ function MapDropZone({
       {children}
     </div>
   );
+}
+
+async function fetchTemperature(): Promise<{
+  latest: TemperatureReading | null;
+  history: TemperatureReading[];
+}> {
+  const res = await fetch('/api/temperature', { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch temperature');
+  return res.json();
 }
 
 function storageKeyForFloor(floorId: string): string {
@@ -264,6 +276,28 @@ export function SeatManagement() {
 
   const mapContainerRef = React.useRef<HTMLDivElement | null>(null);
   const mapRef = React.useRef<HTMLDivElement | null>(null);
+
+  const { data: temperatureData } = useQuery({
+    queryKey: ['temperature'],
+    queryFn: fetchTemperature,
+    refetchInterval: 1_000,
+    staleTime: 1_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  const channelSeatStatus = React.useMemo<SeatStatus | null>(() => {
+    if (!temperatureData?.latest || !temperatureData.history) return null;
+    return computeSeatStatus(temperatureData.latest, temperatureData.history);
+  }, [temperatureData?.latest, temperatureData?.history]);
+
+  const seatsForDisplay = React.useMemo(() => {
+    return seats.map((seat, index) => ({
+      ...seat,
+      status:
+        (index === 0 ? channelSeatStatus ?? 'available' : 'available') as SeatStatus,
+    }));
+  }, [seats, channelSeatStatus]);
 
   const [imageNaturalSize, setImageNaturalSize] = React.useState<{
     width: number;
@@ -507,8 +541,8 @@ export function SeatManagement() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
       <div className="flex min-h-0 flex-1 gap-6 overflow-hidden">
-        <Card className="flex w-3/12 max-w-xs min-w-[220px] flex-col overflow-hidden">
-          <CardContent className="shrink-0 flex flex-col gap-2">
+        <Card className="flex min-h-0 w-3/12 max-w-xs min-w-[220px] flex-col overflow-hidden">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
             <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
               <PopoverTrigger asChild>
                 <Button
@@ -552,7 +586,7 @@ export function SeatManagement() {
               </PopoverContent>
             </Popover>
             <div className="mt-0 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-              <CardHeader className="flex items-center justify-between gap-2 px-2">
+              <CardHeader className="flex shrink-0 items-center justify-between gap-2 px-2">
                 <CardTitle className="py-2.5">All Seats</CardTitle>
                 {mode === 'edit' && (
                   <CardAction className="flex shrink-0 gap-1 py-0">
@@ -568,9 +602,9 @@ export function SeatManagement() {
                 )}
               </CardHeader>
 
-              <ScrollArea className="h-full min-h-0 overflow-hidden">
+              <ScrollArea className="min-h-0 flex-1 overflow-auto">
                 <ItemGroup className="gap-2 pr-2">
-                  {seats.map((seat, index) => {
+                  {seatsForDisplay.map((seat, index) => {
                     const isSelected = seat.id === selectedSeatId;
                     const statusConfig = seat.status
                       ? getSeatStatusBadgeConfig(seat.status)
@@ -637,7 +671,7 @@ export function SeatManagement() {
             </div>
           </CardContent>
 
-          <CardFooter className="mt-auto flex min-w-0 flex-col gap-2 border-t pt-3">
+          <CardFooter className="mt-auto flex min-w-0 shrink-0 flex-col gap-2 border-t pt-3">
             {mode === 'view' ? (
               <Button
                 className="w-full min-w-0"
@@ -766,7 +800,7 @@ export function SeatManagement() {
                     }}
                   />
 
-                  {seats.map((seat) => (
+                  {seatsForDisplay.map((seat) => (
                     <DraggableSeat
                       key={seat.id}
                       seat={seat}

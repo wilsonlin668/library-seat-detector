@@ -7,7 +7,7 @@ const SESSION_EXPIRED_AFTER_MS = 5_000;
 function baseSeatStatusFromSensors(reading: TemperatureReading): Exclude<SeatStatus, 'session_expired'> {
   const bodyDetected = reading.status === 'body_detected';
   const fsrValue = reading.fsr ?? 0;
-  const hasPressure = fsrValue > 0;
+  const hasPressure = fsrValue > 10;
 
   if (bodyDetected && hasPressure) return 'occupied';
   if (!bodyDetected && hasPressure) return 'reserved';

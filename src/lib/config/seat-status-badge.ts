@@ -25,7 +25,8 @@ export function getSeatStatusBadgeConfig(seatStatus: SeatStatus): SeatStatusBadg
     case 'occupied':
       return {
         label: 'Occupied',
-        variant: 'secondary',
+        variant: 'outline',
+        className: 'bg-gray-500/10 text-gray-700 border-gray-500/40',
       };
     case 'session_expired':
       return {
