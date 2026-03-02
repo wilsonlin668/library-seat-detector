@@ -50,13 +50,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import {
-  ChevronDownIcon,
-  MinusIcon,
-  PlusIcon,
-  SquareIcon,
-  Trash2Icon,
-} from 'lucide-react';
+import { ChevronDownIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 
 type Seat = {
   id: string;
@@ -170,13 +164,11 @@ function DraggableSeat({
 function MapDropZone({
   mapRef,
   className,
-  style,
   onClick,
   children,
 }: {
   mapRef: React.RefObject<HTMLDivElement | null>;
   className: string;
-  style: React.CSSProperties;
   onClick: (event: React.MouseEvent<HTMLDivElement>) => void;
   children: React.ReactNode;
 }) {
@@ -189,7 +181,7 @@ function MapDropZone({
     [mapRef, droppableRef]
   );
   return (
-    <div ref={setRef} className={className} style={style} onClick={onClick}>
+    <div ref={setRef} className={className} onClick={onClick}>
       {children}
     </div>
   );
@@ -270,11 +262,6 @@ export function SeatManagement() {
   const [hasUnsavedChanges, setHasUnsavedChanges] =
     React.useState<boolean>(false);
 
-  const [zoom, setZoom] = React.useState<number>(1);
-  const [minZoom, setMinZoom] = React.useState<number>(1);
-  const maxZoom = 1;
-
-  const mapContainerRef = React.useRef<HTMLDivElement | null>(null);
   const mapRef = React.useRef<HTMLDivElement | null>(null);
 
   const { data: temperatureData } = useQuery({
@@ -299,62 +286,11 @@ export function SeatManagement() {
     }));
   }, [seats, channelSeatStatus]);
 
-  const [imageNaturalSize, setImageNaturalSize] = React.useState<{
-    width: number;
-    height: number;
-  } | null>(null);
-
   const activeFloor = React.useMemo(
     () =>
       floorsList.find((floor) => floor.id === activeFloorId) ?? floorsList[0],
     [activeFloorId, floorsList]
   );
-
-  const recalculateZoomBounds = React.useCallback(
-    (imgWidth?: number, imgHeight?: number) => {
-      const container = mapContainerRef.current;
-      const w = imgWidth ?? imageNaturalSize?.width;
-      const h = imgHeight ?? imageNaturalSize?.height;
-      if (!container || !w || !h) {
-        return;
-      }
-
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
-
-      if (containerWidth === 0 || containerHeight === 0) {
-        return;
-      }
-
-      const fitScale = Math.min(containerWidth / w, containerHeight / h, 1);
-
-      setMinZoom(fitScale);
-      setZoom((previousZoom) => {
-        if (Number.isNaN(previousZoom)) {
-          return fitScale;
-        }
-        return Math.min(maxZoom, Math.max(fitScale, previousZoom));
-      });
-    },
-    [imageNaturalSize, maxZoom]
-  );
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    recalculateZoomBounds();
-
-    const handleResize = () => {
-      recalculateZoomBounds();
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [recalculateZoomBounds]);
 
   React.useEffect(() => {
     const loadedSeats = loadSeatsForFloor(activeFloorId);
@@ -492,23 +428,6 @@ export function SeatManagement() {
     },
     [mode, updateSeatPositionFromClient]
   );
-
-  const handleZoomChange = (nextZoom: number) => {
-    const clampedZoom = Math.min(maxZoom, Math.max(minZoom, nextZoom));
-    setZoom(clampedZoom);
-  };
-
-  const handleZoomIn = () => {
-    handleZoomChange(zoom + 0.1);
-  };
-
-  const handleZoomOut = () => {
-    handleZoomChange(zoom - 0.1);
-  };
-
-  const handleZoomReset = () => {
-    handleZoomChange(minZoom);
-  };
 
   const handleAddNewFloor = () => {
     const name = newFloorName.trim() || `Floor ${floorsList.length + 1}`;
@@ -743,42 +662,10 @@ export function SeatManagement() {
               onDragMove={handleDragMove}
               onDragEnd={handleDragEnd}
             >
-              <div
-                ref={mapContainerRef}
-                className="bg-muted relative min-h-0 flex-1 overflow-hidden rounded-lg border"
-              >
-                {/* <div
-                  className="bg-background/95 absolute top-2 right-2 z-10 flex items-center gap-2 rounded-md border px-2 py-1 shadow-sm backdrop-blur"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Button
-                    onClick={handleZoomOut}
-                    variant="outline"
-                    aria-label="Zoom out"
-                  >
-                    <MinusIcon className="size-4" />
-                  </Button>
-                  <Button
-                    onClick={handleZoomIn}
-                    variant="outline"
-                    aria-label="Zoom in"
-                  >
-                    <PlusIcon className="size-4" />
-                  </Button>
-                  <Button onClick={handleZoomReset} variant="outline">
-                    <SquareIcon className="size-4" />
-                  </Button>
-                  <span className="mx-2 min-w-[2.5rem] text-right text-xs tabular-nums">
-                    {(zoom * 100).toFixed(0)}%
-                  </span>
-                </div> */}
+              <div className="bg-muted relative min-h-0 flex-1 overflow-hidden rounded-lg border">
                 <MapDropZone
                   mapRef={mapRef}
                   className={`absolute inset-0 origin-center ${mode === 'edit' ? 'cursor-crosshair' : ''}`}
-                  style={{
-                    transform: `scale(${zoom})`,
-                    transformOrigin: 'center center',
-                  }}
                   onClick={handleMapClick}
                 >
                   <Image
@@ -788,16 +675,6 @@ export function SeatManagement() {
                     sizes="(min-width: 1024px) 800px, 100vw"
                     className="pointer-events-none object-contain opacity-60 select-none"
                     priority
-                    onLoadingComplete={(image) => {
-                      setImageNaturalSize({
-                        width: image.naturalWidth,
-                        height: image.naturalHeight,
-                      });
-                      recalculateZoomBounds(
-                        image.naturalWidth,
-                        image.naturalHeight
-                      );
-                    }}
                   />
 
                   {seatsForDisplay.map((seat) => (

@@ -3,26 +3,26 @@
 import * as React from 'react';
 import {
   IconCamera,
-  IconChartBar,
+  // IconChartBar,
   IconDashboard,
   IconFileAi,
   IconFileDescription,
   IconHelp,
   IconInnerShadowTop,
-  IconListDetails,
+  // IconListDetails,
   IconSearch,
   IconSettings,
   IconMap,
 } from '@tabler/icons-react';
 
 import { NavMain } from '@/components/nav-main';
-import { NavStandard } from '@/components/nav-standard';
-import { NavSecondary } from '@/components/nav-secondary';
-import { NavUser } from '@/components/nav-user';
+// import { NavStandard } from '@/components/nav-standard';
+// import { NavSecondary } from '@/components/nav-secondary';
+// import { NavUser } from '@/components/nav-user';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
+  // SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -47,16 +47,16 @@ const data = {
       url: '/seat-management',
       icon: IconMap,
     },
-    {
-      title: 'Lifecycle',
-      url: '#',
-      icon: IconListDetails,
-    },
-    {
-      title: 'Analytics',
-      url: '#',
-      icon: IconChartBar,
-    },
+    // {
+    //   title: 'Lifecycle',
+    //   url: '#',
+    //   icon: IconListDetails,
+    // },
+    // {
+    //   title: 'Analytics',
+    //   url: '#',
+    //   icon: IconChartBar,
+    // },
   ],
   navClouds: [
     {
@@ -162,12 +162,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavStandard items={data.standard} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        {/* <NavStandard items={data.standard} /> */}
+        {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
-      <SidebarFooter>
+      {/* <SidebarFooter>
         <NavUser user={data.user} />
-      </SidebarFooter>
+      </SidebarFooter> */}
     </Sidebar>
   );
 }
